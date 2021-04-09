@@ -1,7 +1,7 @@
 // 参考：https://jsstore.net/tutorial/get-started/
 import * as JsStore from 'jsstore'
-import jsStoreWorker from 'jsstore/dist/jsstore.worker.js'
-import jsStoreWorkerMin from 'jsstore/dist/jsstore.worker.min.js'
+// import jsStoreWorker from 'jsstore/dist/jsstore.worker.js'
+// import jsStoreWorkerMin from 'jsstore/dist/jsstore.worker.min.js'
 // 参考：https://github.com/ujjwalguptaofficial/sqlweb/wiki
 import SqlWeb from 'sqlweb'
 import { DbSchema, TableSchema } from './Interfaces'
@@ -11,11 +11,13 @@ const isDev = process.env.NODE_ENV === 'development'
 const getWorkerPath = (): any => {
    // return dev build when env is development
    if (isDev) {
-      return jsStoreWorker
+      // eslint-disable-next-line import/no-webpack-loader-syntax
+      return require('file-loader?name=scripts/[name].[hash].js!jsstore/dist/jsstore.worker.js')
+      // return jsStoreWorker
    } else { // return prod build when env is production
       // eslint-disable-next-line import/no-webpack-loader-syntax
-      // return require('file-loader?name=scripts/[name].[hash].js!jsstore/dist/jsstore.worker.min.js')
-      return jsStoreWorkerMin
+      return require('file-loader?name=scripts/[name].[hash].js!jsstore/dist/jsstore.worker.min.js')
+      // return jsStoreWorkerMin
    }
 }
 const workerPath = getWorkerPath()
