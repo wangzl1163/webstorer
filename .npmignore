@@ -1,0 +1,13 @@
+examples
+node_modules
+src
+test
+.eslintrc.js
+license.js
+
+#build tools
+build
+.vscode
+
+#definition
+!dist/src
