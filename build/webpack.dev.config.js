@@ -1,12 +1,24 @@
 const { merge } = require('webpack-merge')
-const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const webpack = require('webpack')
 const baseConfig = require('./webpack.base.config')
 
 module.exports = merge(baseConfig, {
    // cheap-module-eval-source-map is faster for development
    devtool: 'cheap-module-eval-source-map',
-   mode: 'development',
+   mode: 'production',
+   output: {
+      filename: 'webStorer.js',
+      chunkFilename: '[name].chunk.js',
+      library: 'webStorer'
+   },
    plugins: [
-      new CleanWebpackPlugin()
-   ]
+      new webpack.DefinePlugin({
+         'process.env': {
+            NODE_ENV: JSON.stringify('development')
+         }
+      })
+   ],
+   optimization: {
+      minimize: false
+   }
 })

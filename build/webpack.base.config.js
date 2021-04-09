@@ -7,10 +7,6 @@ module.exports = {
    entry: {
       main: './src/main.ts'
    },
-   output: {
-      filename: 'webStorer.js',
-      chunkFilename: '[name].chunk.js'
-   },
    resolve: {
       extensions: ['.ts']
    },
