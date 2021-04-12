@@ -1,6 +1,6 @@
 {
   "name": "webstorer",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "a web storer based on indexedDB",
   "main": "dist/webStorer.js",
   "scripts": {
