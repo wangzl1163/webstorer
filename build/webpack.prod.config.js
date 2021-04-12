@@ -1,5 +1,4 @@
 const { merge } = require('webpack-merge')
-const webpack = require('webpack')
 const baseConfig = require('./webpack.base.config')
 
 module.exports = merge(baseConfig, {
@@ -7,7 +6,9 @@ module.exports = merge(baseConfig, {
    output: {
       filename: 'webStorer.min.js',
       chunkFilename: '[name].chunk.min.js',
-      library: 'webStorer'
+      library: 'webStorer',
+      libraryTarget: 'umd',
+      umdNamedDefine: true
    },
    optimization: {
       // https://webpack.js.org/configuration/optimization/#optimizationnamedmodules
@@ -16,11 +17,5 @@ module.exports = merge(baseConfig, {
       moduleIds: 'hashed',
       chunkIds: 'named'
    },
-   plugins: [
-      new webpack.DefinePlugin({
-         'process.env': {
-            NODE_ENV: 'production'
-         }
-      })
-   ]
+   plugins: []
 })
