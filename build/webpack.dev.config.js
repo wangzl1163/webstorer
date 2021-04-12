@@ -9,7 +9,9 @@ module.exports = merge(baseConfig, {
    output: {
       filename: 'webStorer.js',
       chunkFilename: '[name].chunk.js',
-      library: 'webStorer'
+      library: 'webStorer',
+      libraryTarget: 'umd',
+      umdNamedDefine: true
    },
    plugins: [
       new webpack.DefinePlugin({

@@ -1,0 +1,5 @@
+/*!
+ * @license :webstorer - V0.5.0 - 12/04/2021
+ * https://github.com/wangzl1163/webstorer
+ * Copyright (c) 2021 @wangzl1163; Licensed MIT
+ */

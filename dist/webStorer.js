@@ -1,10 +1,19 @@
 /*!
- * @license :webstorer - V0.5.0 - 12/04/2021
+ * @license :webstorer - V0.6.0 - 12/04/2021
  * https://github.com/wangzl1163/webstorer
  * Copyright (c) 2021 @wangzl1163; Licensed MIT
  */
-var webStorer =
-/******/ (function(modules) { // webpackBootstrap
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(typeof exports === 'object' && typeof module === 'object')
+		module.exports = factory();
+	else if(typeof define === 'function' && define.amd)
+		define("webStorer", [], factory);
+	else if(typeof exports === 'object')
+		exports["webStorer"] = factory();
+	else
+		root["webStorer"] = factory();
+})(window, function() {
+return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
@@ -131,3 +140,4 @@ eval("/*!\n * @license :jsstore - V3.13.5 - 06/04/2021\n * https://github.com/uj
 
 /***/ })
 /******/ ]);
+});
