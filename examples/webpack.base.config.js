@@ -1,10 +1,18 @@
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+
 module.exports = {
-   mode: 'production',
    entry: './src/index.js',
    output: {
       filename: 'index.js',
       chunkFilename: '[name].chunk.js'
    },
+   plugins: [
+      new CleanWebpackPlugin(),
+      new HtmlWebpackPlugin({
+         template: './public/index.html'
+      })
+   ],
    module: {
       rules: [
          {

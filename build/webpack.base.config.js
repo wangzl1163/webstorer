@@ -7,6 +7,11 @@ module.exports = {
    entry: {
       main: './src/main.ts'
    },
+   output: {
+      library: 'webStorer',
+      libraryTarget: 'umd',
+      umdNamedDefine: true
+   },
    resolve: {
       extensions: ['.ts']
    },
@@ -17,16 +22,10 @@ module.exports = {
       rules: [
          {
             test: /\.ts$/,
-            exclude: /node_modules/,
+            // exclude: /node_modules/,
             use: [
                {
-                  loader: 'babel-loader',
-                  options: {
-                     presets: [
-                        '@babel/preset-env',
-                        '@babel/preset-typescript'
-                     ]
-                  }
+                  loader: 'babel-loader'
                }
             ]
          }

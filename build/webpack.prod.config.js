@@ -6,10 +6,9 @@ module.exports = merge(baseConfig, {
    output: {
       filename: 'webStorer.min.js',
       chunkFilename: '[name].chunk.min.js',
-      library: 'webStorer',
-      libraryTarget: 'umd',
-      umdNamedDefine: true
+      sourceMapFilename: 'webStorer.min.map'
    },
+   devtool: 'source-map',
    optimization: {
       // https://webpack.js.org/configuration/optimization/#optimizationnamedmodules
       // This is because each module.id is incremented based on resolving order by default.

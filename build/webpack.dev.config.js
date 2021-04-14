@@ -3,15 +3,12 @@ const webpack = require('webpack')
 const baseConfig = require('./webpack.base.config')
 
 module.exports = merge(baseConfig, {
-   // cheap-module-eval-source-map is faster for development
-   devtool: 'cheap-module-eval-source-map',
+   devtool: 'source-map',
    mode: 'production',
    output: {
       filename: 'webStorer.js',
       chunkFilename: '[name].chunk.js',
-      library: 'webStorer',
-      libraryTarget: 'umd',
-      umdNamedDefine: true
+      sourceMapFilename: 'webStorer.map'
    },
    plugins: [
       new webpack.DefinePlugin({
