@@ -8,7 +8,7 @@
     "build:prod": "webpack --config build/webpack.prod.config.js"
   },
   "dependencies": {
-    "@babel/runtime": "^7.13.10",
+    "@babel/runtime-corejs3": "^7.13.10",
     "core-js": "^3.10.1",
     "jsstore": "^3.13.5",
     "sqlweb": "^1.5.0"
