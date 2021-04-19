@@ -1,9 +1,11 @@
 examples
 node_modules
 src
-test
 .eslintrc.js
-license.*
+LICENSE.js
+license.js
+babel.config.json
+.browserslistrc
 
 #build tools
 build
