@@ -1,26 +1,10 @@
 // 参考：https://jsstore.net/tutorial/get-started/
 import * as JsStore from 'jsstore'
-// import jsStoreWorker from 'jsstore/dist/jsstore.worker.js'
-// import jsStoreWorkerMin from 'jsstore/dist/jsstore.worker.min.js'
 // 参考：https://github.com/ujjwalguptaofficial/sqlweb/wiki
 import SqlWeb from 'sqlweb'
 import { DbSchema, TableSchema } from './Interfaces'
 
 const isDev = process.env.NODE_ENV === 'development'
-// 需要file-loader依赖包
-const getWorkerPath = (): any => {
-   // return dev build when env is development
-   if (isDev) {
-      // eslint-disable-next-line import/no-webpack-loader-syntax
-      return require('file-loader?name=scripts/[name].[hash].js!jsstore/dist/jsstore.worker.js')
-      // return jsStoreWorker
-   } else { // return prod build when env is production
-      // eslint-disable-next-line import/no-webpack-loader-syntax
-      return require('file-loader?name=scripts/[name].[hash].js!jsstore/dist/jsstore.worker.min.js')
-      // return jsStoreWorkerMin
-   }
-}
-const workerPath = getWorkerPath()
 
 let connection, originalInsert, originalUpdate, originalRemove, originalSelect
 
@@ -28,7 +12,7 @@ let connection, originalInsert, originalUpdate, originalRemove, originalSelect
  * @description 创建数据库连接
  * @returns {Object} 返回创建的数据库连接
  */
-function connect (): Promise<any> {
+function connect (workerPath:string = ''): Promise<any> {
    try {
       // 连接不存在时创建连接
       // The connection variable will be used to execute the further query.
@@ -98,6 +82,7 @@ function createDbSchema (dbName: string, tableSchemaList: TableSchema[]): DbSche
 async function createDb (dbSchema: DbSchema): Promise<any> {
    const database = dbSchema // createDbSchema();
    const isDbCreated = await connection.initDb(database)
+
    if (isDbCreated === true) {
       console.log('db created')
    } else {

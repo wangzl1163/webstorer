@@ -5,6 +5,5 @@ module.exports = merge(baseConfig, {
    mode: 'production',
    devtool: 'source-map',
    output: {
-      publicPath: '/public/'
    }
 })

@@ -1,6 +1,6 @@
 {
   "name": "webstorer",
-  "version": "0.6.3",
+  "version": "0.7.2",
   "description": "a web storer based on indexedDB",
   "main": "dist/webStorer.js",
   "scripts": {
@@ -10,7 +10,7 @@
   "dependencies": {
     "@babel/runtime-corejs3": "^7.13.10",
     "core-js": "^3.10.1",
-    "jsstore": "^3.13.5",
+    "jsstore": "^3.13.6",
     "sqlweb": "^1.5.0"
   },
   "devDependencies": {
