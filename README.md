@@ -17,8 +17,8 @@ a web storer based on indexedDB
    ```
 
 3. create a connection object
-   * Width Web Worker
-   (1) Install file-loader - npm i file-loader -D
+   * Width Web Worker  
+   (1) Install file-loader - npm i file-loader -D  
    (2) Write below code:
 
      ```javascript
@@ -39,7 +39,7 @@ a web storer based on indexedDB
       })
      ```
 
-   * Without Web Worker
+   * Without Web Worker  
    (1) make sure you have included jsstore.worker file in your app.
 
       ```html
