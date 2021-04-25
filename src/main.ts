@@ -76,7 +76,7 @@ function createDbSchema (dbName: string, tableSchemaList: TableSchema[]): DbSche
 
 /**
  * 初始化数据库
- * @param {Object} dbSchema 数据库对象
+ * @param {Object} dbSchema 数据库范式
  * @returns 返回数据库连接对象。
  */
 async function createDb (dbSchema: DbSchema): Promise<any> {
@@ -139,7 +139,19 @@ async function insert (tableName: string, data: any[]): Promise<number|undefined
 /**
  * 更新数据
  * @param {String} tableName 表名
- * @param {Object} expression 更新操作的表达式对象
+ * @param {Object} expression 更新操作的表达式对象，值格式为：{
+ * set: {
+        column1: value1,
+        column2: value2,
+        column3: { // 支持四则运算操作符—— +、-、*、/
+           '+': value3
+        }
+    },
+    where: {
+        column4: some_value,
+        column5: some_another_value
+    }
+ * }
  * @returns 返回一个Promise对象。值为更新操作影响的行数。
  */
 async function update (tableName: string, expression: any): Promise<number|undefined> {
@@ -158,7 +170,12 @@ async function update (tableName: string, expression: any): Promise<number|undef
 /**
  * 删除数据
  * @param {String} tableName 表名
- * @param {Object} expression 删除操作的表达式对象
+ * @param {Object} expression 删除操作的表达式对象，值格式为：{
+ * where: {
+        column1: some_value,
+        column2: some_another_value
+    }
+ * }
  * @returns 返回一个Promise对象。值为删除操作影响的行数。
  */
 async function remove (tableName: string, expression: any): Promise<number|undefined> {
@@ -177,10 +194,29 @@ async function remove (tableName: string, expression: any): Promise<number|undef
 /**
  * 查询数据
  * @param {String} tableName 表名
- * @param {Object} expression 查询操作的表达式对象
+ * @param {Object} expression 查询操作的表达式对象，默认值为空对象。值格式为：
+ * 普通查询：
+ * where条件默认为and关系，表示且，or关系——表示或，则需要在where对象中增加or属性其值为以表字段为属性的对象。
+ * {
+ *    where: {
+        column1: some_value,
+        column2: some_another_value,
+        or: {
+           column3: value
+        }
+      }
+ * }
+   聚合函数查询：
+   支持的聚合函数——max、min、count、sum、avg
+   {
+      aggregate：{
+         // 如果要结合多个列查询，则传入一个以列名为元素的数组，例如：count:['column1','column2']
+         min: Column_Name
+      }
+   }
  * @returns 返回一个Promise对象。值为查询出的数据的数组。
  */
-async function select (tableName: string, expression: any): Promise<any[]|undefined> {
+async function select (tableName: string, expression: any = {}): Promise<any[]|undefined> {
    const results = await originalSelect({
       from: tableName,
       ...expression
@@ -196,7 +232,7 @@ async function select (tableName: string, expression: any): Promise<any[]|undefi
 /**
  * 分页查询数据
  * @param {String} tableName 表名
- * @param {Object} expression 查询操作的表达式对象：{from: tableName, where: {column1:字段名, ...}, ...}
+ * @param {Object} expression 查询操作的表达式对象，默认值为空对象，值格式为：{ where: {column1:字段名, ...}, ...}
  * @param {Int} pageIndex 页码，默认值为1
  * @param {Int} pageSize 页面展示条数，默认值为10
  * @returns 返回一个Promise对象。值为分页查询出的数据的数组。
