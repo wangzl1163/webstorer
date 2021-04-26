@@ -2,11 +2,26 @@
 import * as JsStore from 'jsstore'
 // 参考：https://github.com/ujjwalguptaofficial/sqlweb/wiki
 import SqlWeb from 'sqlweb'
-import { DbSchema, TableSchema } from './Interfaces'
+import { DbSchema, TableSchema, OrderBy, Where, Join, QueryModel } from './Interfaces'
 
 const isDev = process.env.NODE_ENV === 'development'
 
-let connection, originalInsert, originalUpdate, originalRemove, originalSelect
+let connection
+let originalInsert
+let originalUpdate
+let originalRemove
+let originalSelect
+let originalCount
+let originalUnion
+let originalIntersect
+let originalClear
+let originalDropDb
+let orderByExpress = null
+let whereExpress = null
+let joinExpress = null
+let top = 20
+let aggregateExpress = null
+let groupByExpress = null
 
 /**
  * @description 创建数据库连接
@@ -28,6 +43,11 @@ function connect (workerPath:string = ''): Promise<any> {
          originalUpdate = connection.update.bind(connection)
          originalRemove = connection.remove.bind(connection)
          originalSelect = connection.select.bind(connection)
+         originalCount = connection.count.bind(connection)
+         originalUnion = connection.union.bind(connection)
+         originalIntersect = connection.intersect.bind(connection)
+         originalClear = connection.clear.bind(connection)
+         originalDropDb = connection.dropDb.bind(connection)
 
          connection.createDb = createDb
          connection.createDbSchema = createDbSchema
@@ -37,6 +57,15 @@ function connect (workerPath:string = ''): Promise<any> {
          connection.remove = remove
          connection.select = select
          connection.paging = paging
+         connection.orderBy = orderBy
+         connection.where = where
+         connection.limit = limit
+         connection.aggregate = aggregate
+         connection.join = join
+         connection.union = union
+         connection.intersect = intersect
+         connection.clear = clear
+         connection.dropDb = dropDb
       }
 
       return Promise.resolve(connection)
@@ -196,14 +225,19 @@ async function remove (tableName: string, expression: any): Promise<number|undef
  * @param {String} tableName 表名
  * @param {Object} expression 查询操作的表达式对象，默认值为空对象。值格式为：
  * 普通查询：
- * where条件默认为and关系，表示且，or关系——表示或，则需要在where对象中增加or属性其值为以表字段为属性的对象。
+ * where条件默认为and关系，表示且
+ * 若要使用or关系——表示或，则需要在where对象中增加or属性其值为以表字段为属性的对象；
+ * 若要使用like模糊查询，则添加以like为属性模糊值为值的对象。
  * {
  *    where: {
         column1: some_value,
         column2: some_another_value,
         or: {
            column3: value
-        }
+        },
+        column4: { // 模糊查询，like值可为：'%a'，'a%'，'%a%'三种形式
+            like: 'a%'
+        },
       }
  * }
    聚合函数查询：
@@ -214,19 +248,44 @@ async function remove (tableName: string, expression: any): Promise<number|undef
          min: Column_Name
       }
    }
- * @returns 返回一个Promise对象。值为查询出的数据的数组。
+ * @returns 返回一个Promise对象。值为查询出的数据的数组，默认查询结果数量上限为20，可通过limit函数设置。
  */
 async function select (tableName: string, expression: any = {}): Promise<any[]|undefined> {
    const results = await originalSelect({
       from: tableName,
+      limit: top,
+      ...whereExpress,
+      ...orderByExpress,
+      ...aggregateExpress,
+      ...joinExpress,
+      ...groupByExpress,
       ...expression
    })
+
+   // 执行了select后把指定查询条件的变量重置
+   groupByExpress = joinExpress = whereExpress = orderByExpress = aggregateExpress = null
+   top = 20
 
    if (results.length) {
       return Promise.resolve(results)
    }
 
    return Promise.reject()
+}
+
+/**
+ * 查询记录的数量
+ * @param tableName 数据库表名
+ * @param filedValue 字段值对，示例：{ column1: 'value1', column2: 'value2 }
+ * @returns 返回Promise对象。值为数据库表中查询到的记录的数量。
+ */
+async function count (tableName: string, filedValue: any): number {
+   const count = await originalCount({
+      from: tableName,
+      where: filedValue
+   })
+
+   return count
 }
 
 /**
@@ -249,6 +308,227 @@ async function paging (tableName: string, expression:any = {}, pageIndex:number 
    }
 
    return Promise.reject()
+}
+
+/**
+ * 指定查询排序条件
+ * @param {OrderBy|OrderBy[]} expression 排序表达式。
+ * @returns 返回带新查询排序条件的数据库连接对象
+ *
+ * 示例代码：
+ * const expression = {}
+ * connection.orderBy(expression).select(tableName).then(...)
+ *
+ * expression有以下两种形式
+ * 单个排序条件：
+ *  {
+        by: column_name,
+        type: sort_type //supprted sort type is - asc,desc
+    }
+
+ * 多个排序条件：
+    [{
+        by: column_name1,
+        type: sort_type //supprted sort type is - asc,desc
+    },
+    {
+        by: column_name2,
+        type: sort_type //supprted sort type is - asc,desc
+    }]
+ */
+async function orderBy (expression: OrderBy | OrderBy[]): Object {
+   orderByExpress = {
+      order: expression
+   }
+
+   return connection
+}
+
+/**
+ * 指定查询条件
+ * @param {Where} expression 查询条件表达式
+ * @returns 返回带新查询条件的数据库连接对象
+ *
+ * 示例：
+ * const whereExpress = {}
+ * connection.where().select(tableName).then(...)
+ *
+ * whereExpress可以为以下几种表达式对象：
+ * 不包含or的查询条件
+ * {
+      Column1: some_value,
+      Column2: some_another_value
+   }
+
+   包含or的查询条件
+   {
+      Column1: some_value,
+      or: {
+         Column2: some_another_value
+      }
+   }
+
+   包含like的模糊查询条件
+   {
+      Column1: {
+         like: 'a%'
+      },
+   }
+
+   包含between的查询条件
+   {
+      Column1: {
+         '-': {
+            low: low-value,
+            high: high-value
+         }
+      },
+   }
+
+   包含in的查询条件
+   {
+      Column1: {
+         in: [value1, value2, ...]
+      }
+   }
+
+   包含运算符的查询条件，支持的运算符：>、<、>=、<=、!=
+   {
+      Column1: {
+         '>': some_value
+      }
+   }
+ */
+async function where (expression: Where): Object {
+   whereExpress = {
+      where: expression
+   }
+
+   return connection
+}
+
+/**
+ * 排序条件
+ * @param columnName 列名
+ */
+async function groupBy (columnName:string|string[]): Object {
+   groupByExpress = {
+      // You can specify multiple columns at a time by giving the columns name in an array.
+      // groupBy:['column1','column2']
+      groupBy: columnName
+   }
+
+   return connection
+}
+
+/**
+ * 指定查询结果集数量上限
+ * @param {number} limit 结果集数量上限
+ * @returns 返回指定了查询结果集数量上限的数据库连接对象
+ */
+async function limit (limit: number): Object {
+   top = limit
+   return connection
+}
+
+/**
+ * 指定查询的聚合函数
+ * @param aggregateFun 聚合函数名称，支持的聚合函数：count、sum、avg、max、min
+ * @param columnName 表字段，可以为字符串或字符串数组
+ * @returns 返回带有指定聚合函数的数据库连接
+ * 示例：
+ * connection.aggregate('min', 'column1').select(tableName).then(...)
+ */
+async function aggregate (aggregateFun:string, columnName: string | string[]): Object {
+   aggregateExpress = {
+      [aggregateFun]: columnName
+   }
+   return connection
+}
+
+/**
+ * 指定查询join条件
+ * @param {Join|Join[]} joinConfig join配置
+ * @returns 返回带新join查询条件的数据库连接对象
+ *
+ * 示例代码：
+ * const joinConfig = {}
+ * connection.join(joinConfig).select(tableName).then(...)
+ *
+ * joinConfig有以下两种形式
+ * 单个条件：
+ *  {
+      with: table2_name,
+      on: "table1.common_field=table2.common_field",
+      type:"inner",
+      where: {
+         [column name]: some value
+      },
+      as: {
+         customerId: table2_customerId
+      }
+    }
+
+ * 多个条件：
+    [{
+        with:table2_name,
+        on: "table1.common_field=table2.common_field"
+    },{
+        with:table3_name,
+        on: "table1.common_field=table3.common_field"
+    }]
+ */
+async function join (joinConfig: Join | Join[]): Object {
+   joinExpress = {
+      join: joinConfig
+   }
+
+   return connection
+}
+
+/**
+ * 执行union查询
+ * @param unionExpressionArr union查询表达式数组
+ * @returns 返回Promise对象。值为查询到的结果
+ */
+async function union (unionExpressionArr: QueryModel[]): Promise<any> {
+   const res = await originalUnion(unionExpressionArr)
+   if (res.length) {
+      return res
+   }
+
+   return Promise.reject()
+}
+
+/**
+ * 获取多个查询结果的并集
+ * @param expressionArr 查询表达式数组
+ * @returns 返回Promise对象。值为查询到的结果
+ */
+async function intersect (expressionArr: QueryModel[]): Promise<any> {
+   const res = await originalIntersect({ queries: expressionArr })
+   if (res.length) {
+      return res
+   }
+
+   return Promise.reject()
+}
+
+/**
+ * 清除表中所有记录
+ * @param tableName 数据库表名
+ * @returns void
+ */
+async function clear (tableName: string): void {
+   await originalClear(tableName)
+}
+
+/**
+ * 删除当前数据库
+ * @returns void
+ */
+async function dropDb (): void {
+   await originalDropDb()
 }
 
 /**
@@ -290,12 +570,22 @@ export {
    createDbSchema,
    createDb,
    createTable,
-   runSql,
-   getParameterizedSqlExpression,
-   runParameterizedSql,
    insert,
    update,
    remove,
    select,
-   paging
+   count,
+   paging,
+   where,
+   orderBy,
+   groupBy,
+   limit,
+   aggregate,
+   join,
+   union,
+   clear,
+   dropDb,
+   runSql,
+   getParameterizedSqlExpression,
+   runParameterizedSql
 }
