@@ -1,6 +1,6 @@
 {
   "name": "webstorer",
-  "version": "0.7.2",
+  "version": "1.0.0-alpha.0",
   "description": "a web storer based on indexedDB",
   "main": "dist/webStorer.js",
   "scripts": {
@@ -27,7 +27,6 @@
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.3.1",
-    "file-loader": "^6.2.0",
     "smart-banner-webpack-plugin": "^3.0.1",
     "typescript": "^4.2.4",
     "webpack": "^4.46.0",

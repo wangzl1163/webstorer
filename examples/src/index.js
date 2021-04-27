@@ -13,9 +13,9 @@ const workerPath = getWorkerPath().default
 console.log('----- workerPath: ', workerPath)
 webstorer.connect(workerPath).then(conn => {
    const schema = webstorer.createDbSchema('webstorer_example', [{
-      name: 'tb1',
+      name: 'Employees',
       columns: {
-         age: { notNull: true, dataType: 'number' }
+         employeeId: { primaryKey: true, notNull: true, dataType: 'number' }
       }
    }])
 

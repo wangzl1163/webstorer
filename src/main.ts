@@ -77,7 +77,20 @@ function connect (workerPath:string = ''): Promise<any> {
 /**
  * 生成数据库元数据
  * @param {String} dbName 数据库名
- * @param {Array} tableSchemaList 数据库表范式，包含表名和表的各个字段及其约束定义，值格式为：[{
+ * @param {Array} tableSchemaList 数据库表范式，包含表名和表的各个字段及其约束定义，
+ * 支持的约束：
+   primaryKey : boolean             是否为主键
+   autoIncrement : boolean          是否自动增长
+   notNull: boolean                 是否不能为空
+   dataType: webstorer.DATA_TYPE    字段数据类型，数据类型支持：String - 'string'、Number - 'number'、
+                                    DateTime - 'date_time'（值须 为一个日期对象 value = new Date()）、Object - 'object' 、
+                                    Array - 'array'、Boolean - 'boolean'
+   default:  any                    字段的默认值，默认值的数据类型须符合dataType中指定的数据类型
+   unique: boolean                  该列的值是否为唯一值
+   multiEntry: boolean              当dataType为数组且数组元素为string或number类型时是否支持在该值内进行搜索
+   keyPath: string[]                参考：https://jsstore.net/tutorial/keypath/
+   enableSearch: boolean            当前列是否支持搜索，默认值为true
+ * 值格式为：[{
  *    name: 'string',
 		columns: {
 			id: { notNull: true, dataType: 'number' },
@@ -124,7 +137,22 @@ async function createDb (dbSchema: DbSchema): Promise<any> {
 /**
  * 创建数据库表
  * @param dbName 数据库名
- * @param tableSchema 数据库表范式。{
+ * @param tableSchema 数据库表范式。包含表名和表的字段及字段的约束
+ * 支持的约束：
+   primaryKey : boolean             是否为主键
+   autoIncrement : boolean          是否自动增长
+   notNull: boolean                 是否不能为空
+   dataType: webstorer.DATA_TYPE    字段数据类型，数据类型支持：String - 'string'、Number - 'number'、
+                                    DateTime - 'date_time'（值须 为一个日期对象 value = new Date()）、Object - 'object' 、
+                                    Array - 'array'、Boolean - 'boolean'
+   default:  any                    字段的默认值，默认值的数据类型须符合dataType中指定的数据类型
+   unique: boolean                  该列的值是否为唯一值
+   multiEntry: boolean              当dataType为数组且数组元素为string或number类型时是否支持在该值内进行搜索
+   keyPath: string[]                参考：https://jsstore.net/tutorial/keypath/
+   enableSearch: boolean            当前列是否支持搜索，默认值为true
+ *
+   示例：
+   {
  *    name: 'string',
 		columns: {
 			id: { notNull: true, dataType: 'number' },
@@ -168,25 +196,24 @@ async function insert (tableName: string, data: any[]): Promise<number|undefined
 /**
  * 更新数据
  * @param {String} tableName 表名
- * @param {Object} expression 更新操作的表达式对象，值格式为：{
- * set: {
+ * @param {Object} targetColumns 执行更新操作的目标列和值的键值对，值格式为：{
         column1: value1,
         column2: value2,
         column3: { // 支持四则运算操作符—— +、-、*、/
            '+': value3
         }
-    },
-    where: {
+    }
+ * @param {Object} whereColumns where条件列和值的键值对，格式为：{
         column4: some_value,
         column5: some_another_value
     }
- * }
  * @returns 返回一个Promise对象。值为更新操作影响的行数。
  */
-async function update (tableName: string, expression: any): Promise<number|undefined> {
+async function update (tableName: string, targetColumns: any, whereColumns: any = {}): Promise<number|undefined> {
    const rowsUpdated = await originalUpdate({
       in: tableName,
-      ...expression
+      set: targetColumns,
+      where: whereColumns
    })
 
    if (rowsUpdated) {
@@ -199,18 +226,16 @@ async function update (tableName: string, expression: any): Promise<number|undef
 /**
  * 删除数据
  * @param {String} tableName 表名
- * @param {Object} expression 删除操作的表达式对象，值格式为：{
- * where: {
+ * @param {Object} whereColumns where条件列和值的键值对，值格式为：{
         column1: some_value,
         column2: some_another_value
     }
- * }
  * @returns 返回一个Promise对象。值为删除操作影响的行数。
  */
-async function remove (tableName: string, expression: any): Promise<number|undefined> {
+async function remove (tableName: string, whereColumns: any): Promise<number|undefined> {
    const rowsDeleted = await originalRemove({
       from: tableName,
-      ...expression
+      where: whereColumns
    })
 
    if (rowsDeleted) {
@@ -228,6 +253,7 @@ async function remove (tableName: string, expression: any): Promise<number|undef
  * where条件默认为and关系，表示且
  * 若要使用or关系——表示或，则需要在where对象中增加or属性其值为以表字段为属性的对象；
  * 若要使用like模糊查询，则添加以like为属性模糊值为值的对象。
+ * 若要使用in查询，则添加以in为属性的值为数组的对象。
  * {
  *    where: {
         column1: some_value,
@@ -238,6 +264,9 @@ async function remove (tableName: string, expression: any): Promise<number|undef
         column4: { // 模糊查询，like值可为：'%a'，'a%'，'%a%'三种形式
             like: 'a%'
         },
+        column_Name: {
+            in: [value1, value2, ...]
+        }
       }
  * }
    聚合函数查询：
@@ -289,6 +318,38 @@ async function count (tableName: string, filedValue: any): number {
 }
 
 /**
+ * 执行union查询
+ * @param unionExpressionArr union查询表达式数组。
+ * 示例：[
+      {
+         from: 'tableName',
+         where: {
+               columnName: {
+                  '>': 10
+               }
+         }
+      },
+      {
+         from: 'tableName',
+         where: {
+               columnName: {
+                  '>': 50
+               }
+         }
+      }
+   ]
+ * @returns 返回Promise对象。值为查询到的结果
+ */
+async function union (unionExpressionArr: QueryModel[]): Promise<any> {
+   const res = await originalUnion(unionExpressionArr)
+   if (res.length) {
+      return res
+   }
+
+   return Promise.reject()
+}
+
+/**
  * 分页查询数据
  * @param {String} tableName 表名
  * @param {Object} expression 查询操作的表达式对象，默认值为空对象，值格式为：{ where: {column1:字段名, ...}, ...}
@@ -319,21 +380,21 @@ async function paging (tableName: string, expression:any = {}, pageIndex:number 
  * const expression = {}
  * connection.orderBy(expression).select(tableName).then(...)
  *
- * expression有以下两种形式
+ * expression有以下两种形式，排序类型支持：asc——升序，desc——降序
  * 单个排序条件：
  *  {
         by: column_name,
-        type: sort_type //supprted sort type is - asc,desc
+        type: sort_type // 支持：asc、desc
     }
 
  * 多个排序条件：
     [{
         by: column_name1,
-        type: sort_type //supprted sort type is - asc,desc
+        type: sort_type
     },
     {
         by: column_name2,
-        type: sort_type //supprted sort type is - asc,desc
+        type: sort_type
     }]
  */
 async function orderBy (expression: OrderBy | OrderBy[]): Object {
@@ -408,7 +469,7 @@ async function where (expression: Where): Object {
 }
 
 /**
- * 排序条件
+ * 指定分组条件
  * @param columnName 列名
  */
 async function groupBy (columnName:string|string[]): Object {
@@ -447,7 +508,7 @@ async function aggregate (aggregateFun:string, columnName: string | string[]): O
 }
 
 /**
- * 指定查询join条件
+ * 指定查询join查询条件
  * @param {Join|Join[]} joinConfig join配置
  * @returns 返回带新join查询条件的数据库连接对象
  *
@@ -462,7 +523,7 @@ async function aggregate (aggregateFun:string, columnName: string | string[]): O
       on: "table1.common_field=table2.common_field",
       type:"inner",
       where: {
-         [column name]: some value
+         [column_name]: some value
       },
       as: {
          customerId: table2_customerId
@@ -487,23 +548,26 @@ async function join (joinConfig: Join | Join[]): Object {
 }
 
 /**
- * 执行union查询
- * @param unionExpressionArr union查询表达式数组
- * @returns 返回Promise对象。值为查询到的结果
- */
-async function union (unionExpressionArr: QueryModel[]): Promise<any> {
-   const res = await originalUnion(unionExpressionArr)
-   if (res.length) {
-      return res
-   }
-
-   return Promise.reject()
-}
-
-/**
  * 获取多个查询结果的并集
- * @param expressionArr 查询表达式数组
- * @returns 返回Promise对象。值为查询到的结果
+ * @param expressionArr 查询表达式数组。示例：[
+      {
+         from: 'Products', // table name
+         where: {
+               price: { // column name
+                  '>': 10
+               }
+         }
+      },
+      {
+         from: 'Products',
+         where: {
+               price: {
+                  '>': 50
+               }
+         }
+      }
+  ]
+ * @returns 返回Promise对象。值为查询到的结果。
  */
 async function intersect (expressionArr: QueryModel[]): Promise<any> {
    const res = await originalIntersect({ queries: expressionArr })
